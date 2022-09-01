@@ -52,6 +52,8 @@ repos:
     rev: v2.37.3
     hooks:
       - id: pyupgrade
+        args:
+          - --py38-plus
   - repo: local
     hooks:
       - id: pyright
