@@ -1,6 +1,11 @@
 """Contains the high-level API client."""
 
 import asyncio
+import binascii
+import getpass
+import hashlib
+import json
+import pathlib
 from typing import Optional
 
 import websockets.client
@@ -8,46 +13,100 @@ import websockets.client
 from .connection import SolConnection
 from .utils import BadRequest
 
+CONFIG_DIRECTORY = pathlib.Path.home() / ".config" / "solmate-sdk"
+AUTHSTORE_FILE = CONFIG_DIRECTORY / "authstore.json"
+DEFAULT_DEVICE_ID = "solmate-sdk"
+
 
 class SolMateAPIClient:
     """Class-based API Client for the Sol and SolMate Websocket API.
+    This client provides synchronous endpoint methods on top of the asynchronous ones (actually used in the background).
+
     Simple Usage:
 
         ```python
         client = SolMateAPIClient("S1K0506...00X")
-        client.connect()
+        client.quickstart()
         print(f"Current live values of your SolMate: {client.get_live_values()}")
         ```
     """
 
-    def __init__(self, serialnum):
+    def __init__(self, serialnum: str):
         """Initializes the instance given a serial number and auth_token (signature).
         Leaves the underlying connection object uninitialised.
         """
-        self.conn: Optional[SolConnection] = None
         self.serialnum: str = serialnum
+        self.conn: Optional[SolConnection] = None
+        self.authenticated: bool = False
 
-    async def _connect(self, auth_token, device_id="solmate-sdk"):
+    async def _connect(self):
         """Asynchronously attempts to connect to the server and initialize the client."""
         sock = await websockets.client.connect("wss://sol.eet.energy:9124")
         self.conn = SolConnection(sock)
-        try:
-            await self.conn.request(
-                "authenticate",
-                {"serial_num": self.serialnum, "signature": auth_token, "device_id": device_id},
-            )
-        except BadRequest as err:
-            raise ValueError("Invalid Serial Number?") from err
 
-    def connect(self, auth_token, device_id="solmate-sdk"):
+    def connect(self):
         """Synchronously attempts to connect to the server and initialize the client."""
-        asyncio.run(self._connect(auth_token, device_id))
+        asyncio.run(self._connect())
 
     def request(self, route, data):
         """Synchronous method to make requests to the API."""
         if self.conn is None:
             raise RuntimeError("Connection has not yet been initialised.")
         return asyncio.run(self.conn.request(route, data))
+
+    def login(self, user_password, device_id=DEFAULT_DEVICE_ID) -> str:
+        """Generates the authentication token from the serialnumber + password."""
+        try:
+            response = self.request(
+                "login",
+                {
+                    "serial_num": "Q-123-456",
+                    "user_password_hash": binascii.b2a_base64(
+                        hashlib.sha256(user_password).digest()
+                    ),  # the stage-1 hash
+                    "device_id": device_id,
+                },
+            )
+        except BadRequest as err:
+            raise err
+        if not response["success"]:
+            raise RuntimeError("Unauthenticated :(")
+        return response["signature"]
+
+    def authenticate(self, auth_token, device_id=DEFAULT_DEVICE_ID):
+        """Given the authentication token, try to authenticate this websocket connection.
+        Subsequent method calls to protected methods are unlocked this way.
+        """
+        try:
+            self.request(
+                "authenticate",
+                {
+                    "serial_num": self.serialnum,
+                    "signature": auth_token,
+                    "device_id": device_id,
+                },
+            )
+        except BadRequest as err:
+            raise ValueError("Invalid Serial Number?") from err
+
+    def quickstart(self, password=None, device_id=DEFAULT_DEVICE_ID):
+        """Connect, login, authenticate and store the token for future use!"""
+        self.connect()
+        token: Optional[str] = None
+        if AUTHSTORE_FILE.exists():
+            with open(AUTHSTORE_FILE, "w", encoding="utf-8") as file:
+                authstore = json.load(file)
+            token = authstore["token"]
+        if token is None:
+            print(f"Please enter the user password of your SolMate {self.serialnum}.")
+            print(f"The credentials will then be stored for future use in {AUTHSTORE_FILE}! :)")
+            password = getpass.getpass("Your SolMate's user password:")
+            token = self.login(password, device_id)
+            CONFIG_DIRECTORY.mkdir(exist_ok=True)
+            with open(AUTHSTORE_FILE, "w", encoding="utf-8") as file:
+                json.dump({"token": token}, file)
+            print("Stored credentials...")
+        self.authenticate(token, device_id)
 
     def get_live_values(self):
         """Return current live values of the respective SolMate as a dictionary (pv power, battery state, injection)."""
