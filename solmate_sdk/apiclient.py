@@ -94,7 +94,7 @@ class SolMateAPIClient:
         self.connect()
         token: Optional[str] = None
         if AUTHSTORE_FILE.exists():
-            with open(AUTHSTORE_FILE, "w", encoding="utf-8") as file:
+            with open(AUTHSTORE_FILE, encoding="utf-8") as file:
                 authstore = json.load(file)
             token = authstore["token"]
         if token is None:
