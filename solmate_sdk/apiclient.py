@@ -1,7 +1,7 @@
 """Contains the high-level API client."""
 
 import asyncio
-import binascii
+import base64
 import getpass
 import hashlib
 import json
@@ -46,13 +46,13 @@ class SolMateAPIClient:
 
     def connect(self):
         """Synchronously attempts to connect to the server and initialize the client."""
-        asyncio.run(self._connect())
+        asyncio.get_event_loop().run_until_complete(self._connect())
 
     def request(self, route, data):
         """Synchronous method to make requests to the API."""
         if self.conn is None:
             raise RuntimeError("Connection has not yet been initialised.")
-        return asyncio.run(self.conn.request(route, data))
+        return asyncio.get_event_loop().run_until_complete(self.conn.request(route, data))
 
     def login(self, user_password, device_id=DEFAULT_DEVICE_ID) -> str:
         """Generates the authentication token from the serialnumber + password."""
@@ -60,10 +60,10 @@ class SolMateAPIClient:
             response = self.request(
                 "login",
                 {
-                    "serial_num": "Q-123-456",
-                    "user_password_hash": binascii.b2a_base64(
-                        hashlib.sha256(user_password).digest()
-                    ),  # the stage-1 hash
+                    "serial_num": self.serialnum,
+                    "user_password_hash": base64.encodebytes(
+                        hashlib.sha256(user_password.encode()).digest()
+                    ).decode(),  # the stage-1 hash of the user password
                     "device_id": device_id,
                 },
             )
@@ -100,7 +100,7 @@ class SolMateAPIClient:
         if token is None:
             print(f"Please enter the user password of your SolMate {self.serialnum}.")
             print(f"The credentials will then be stored for future use in {AUTHSTORE_FILE}! :)")
-            password = getpass.getpass("Your SolMate's user password:")
+            password = getpass.getpass("Your SolMate's user password: ")
             token = self.login(password, device_id)
             CONFIG_DIRECTORY.mkdir(exist_ok=True)
             with open(AUTHSTORE_FILE, "w", encoding="utf-8") as file:
@@ -120,4 +120,4 @@ class SolMateAPIClient:
         """Correctly close the underlying connection."""
         if self.conn is None:
             raise RuntimeError("Connection has not yet been initialised.")
-        asyncio.run(self.conn.close())
+        asyncio.get_event_loop().run_until_complete(self.conn.close())
