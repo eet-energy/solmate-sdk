@@ -3,3 +3,4 @@ __pycache__/
 *credentials*
 .cache/
 /dist/
+/build/

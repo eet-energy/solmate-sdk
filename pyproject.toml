@@ -18,6 +18,8 @@ websockets = "^10.3"
 black = "^22.8.0"
 pylint = "^2.15.0"
 isort = "^5.10.1"
+Sphinx = "^5.1.1"
+invoke = "^1.7.1"
 
 [tool.black]
 line-length = 120
