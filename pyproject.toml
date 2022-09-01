@@ -3,14 +3,14 @@ style = ["github://MrP01/lint-me-now/nitpick-base-style.toml", "github://MrP01/l
 
 [tool.poetry]
 name = "solmate-sdk"
-version = "0.1.2"
+version = "0.1.3"
 description = "Software Development Kit for the EET SolMate"
 authors = ["EET"]
 license = "MIT"
 readme = "README.md"
 packages = [{ include = "solmate_sdk" }]
 repository = "https://github.com/eet-energy/solmate-sdk"
-documentation = "TODO"
+documentation = "https://solmate-sdk.readthedocs.io/en/latest/"
 
 [tool.poetry.dependencies]
 python = "^3.8"
