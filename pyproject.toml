@@ -3,7 +3,7 @@ style = ["github://MrP01/lint-me-now/nitpick-base-style.toml", "github://MrP01/l
 
 [tool.poetry]
 name = "solmate-sdk"
-version = "0.1.1"
+version = "0.1.2"
 description = "Software Development Kit for the EET SolMate"
 authors = ["EET"]
 license = "MIT"
