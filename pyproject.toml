@@ -1,0 +1,37 @@
+[tool.nitpick]
+style = ["github://MrP01/lint-me-now/nitpick-base-style.toml", "github://MrP01/lint-me-now/nitpick-python-style.toml"]
+
+[tool.poetry]
+name = "solmate-sdk"
+version = "0.1.0"
+description = "Software Development Kit for the EET SolMate"
+authors = ["EET"]
+license = "MIT"
+readme = "README.md"
+packages = [{ include = "solmate_sdk" }]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+
+[tool.black]
+line-length = 120
+
+[tool.isort]
+line_length = 120
+profile = "black"
+
+[tool.pylint]
+
+[tool.pylint.REPORTS]
+output-format = "colorized"
+
+[tool.pylint.FORMAT]
+max-line-length = 120
+indent-after-paren = 4
+
+[tool.bandit]
+skips = ["B101"]
+
+[build-system]
+requires = ["poetry_core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
