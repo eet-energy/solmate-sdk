@@ -9,6 +9,8 @@ authors = ["EET"]
 license = "MIT"
 readme = "README.md"
 packages = [{ include = "solmate_sdk" }]
+repository = "https://github.com/eet-energy/solmate-sdk"
+documentation = "TODO"
 
 [tool.poetry.dependencies]
 python = "^3.8"

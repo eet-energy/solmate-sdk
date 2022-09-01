@@ -1,16 +1,16 @@
 # EET SolMate SDK
 
-All you need to integrate your [EET](https://www.eet.energy) SolMate into your home automation system and any python based system.
+All you need to integrate your [EET SolMate](https://www.eet.energy) into your home automation system - or really any Python-based system!
 Keep in mind that this is **work in progress**.
 
-This python based SDK provides a class based API Client which let you:
+This Python SDK provides a class-based API Client which lets you:
 
-1. Login to your SolMate with serial number and password which returns an authentification token.
-2. Connect to your SolMate with the authentification token.
+1. Login to your SolMate with serial number and password which returns an authentication token.
+2. Connect to your SolMate with the authentication token.
 3. Get live values of your SolMate.
 4. Check if your SolMate is online.
 
-For any inquiries about or problems with the usage of this API endpoint, please create an issue in this repository.
+For any inquiries about, or problems with, the usage of this API endpoint, please create an issue in this repository.
 
 ## How to use
 
@@ -32,9 +32,15 @@ client.quickstart()
 print(client.get_live_values())
 ```
 
-## Implementation Details
+The SolMate SDK communicates via a Websocket API with your SolMate.
 
-The SolMate SDK communicate over the SolMate Websocket API with your SolMate.
+## Roadmap
+
+- Quickstart supports multiple serial numbers
+- Publish docs on Read The Docs
+- More Examples
+- Full Unit Testing
+- Car Charger Example
 
 ## Links
 
