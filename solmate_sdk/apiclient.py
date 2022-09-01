@@ -11,8 +11,7 @@ from .utils import BadRequest
 
 class SolMateAPIClient:
     """Class-based API Client for the Sol and SolMate Websocket API.
-
-    Usage:
+    Simple Usage:
 
         ```python
         client = SolMateAPIClient("S1K0506...00X")
