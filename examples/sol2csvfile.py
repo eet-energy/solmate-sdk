@@ -14,4 +14,4 @@ while True:
     with open(f'{client.serialnum}.csv', 'a') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames = keys)
         writer.writerow(client.get_live_values())
-    sleep(1)
+    sleep(10)

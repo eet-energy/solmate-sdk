@@ -21,7 +21,7 @@ Install the package via:
 Import the `SolMateAPIClient` class and connect to your SolMate:
 
 ```python
-from solmate_sdk.apiclient import SolMateAPIClient
+from solmate_sdk import SolMateAPIClient
 
 client = SolMateAPIClient("serial_num")
 client.connect()

@@ -21,4 +21,4 @@ while True:
         else:
             print(" ", end=SEPERATOR)
     print()
-    sleep(5)
+    sleep(10)
