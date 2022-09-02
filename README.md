@@ -36,7 +36,7 @@ The SolMate SDK communicates via a Websocket API with your SolMate.
 
 ## Roadmap
 
-- Quickstart supports multiple serial numbers
+- Quickstart supports multiple serial numbers (and multiple device ids?)
 - Publish docs on Read The Docs
 - More Examples
 - Full Unit Testing

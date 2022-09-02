@@ -96,7 +96,10 @@ class SolMateAPIClient:
         if AUTHSTORE_FILE.exists():
             with open(AUTHSTORE_FILE, encoding="utf-8") as file:
                 authstore = json.load(file)
-            token = authstore[self.serialnum]
+            if self.serialnum in authstore:
+                token = authstore[self.serialnum]
+        else: 
+            authstore = {}
         if token is None:
             print(f"Please enter the user password of your SolMate {self.serialnum}.")
             print(f"The credentials will then be stored for future use in {AUTHSTORE_FILE}! :)")
@@ -104,8 +107,10 @@ class SolMateAPIClient:
             token = self.login(password, device_id)
             CONFIG_DIRECTORY.mkdir(exist_ok=True)
             with open(AUTHSTORE_FILE, "w", encoding="utf-8") as file:
-                json.dump({self.serialnum: token}, file)
-            print("Stored credentials...")
+                authstore[self.serialnum] = token
+                json.dump(authstore, file)
+            print(f"Stored credentials of {self.serialnum}.")
+            print(f"Already stored credentials are: ", [sn for sn in authstore.keys()])
         self.authenticate(token, device_id)
 
     def get_live_values(self):
