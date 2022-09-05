@@ -16,6 +16,7 @@ from .utils import BadRequest
 CONFIG_DIRECTORY = pathlib.Path.home() / ".config" / "solmate-sdk"
 AUTHSTORE_FILE = CONFIG_DIRECTORY / "authstore.json"
 DEFAULT_DEVICE_ID = "solmate-sdk"
+SOL_URI = "wss://sol.eet.energy:9124"
 
 
 class SolMateAPIClient:
@@ -38,10 +39,12 @@ class SolMateAPIClient:
         self.serialnum: str = serialnum
         self.conn: Optional[SolConnection] = None
         self.authenticated: bool = False
+        self.uri_verified: bool = False
+        self.uri = SOL_URI
 
     async def _connect(self):
         """Asynchronously attempts to connect to the server and initialize the client."""
-        sock = await websockets.client.connect("wss://sol.eet.energy:9124")
+        sock = await websockets.client.connect(self.uri)
         self.conn = SolConnection(sock)
 
     def connect(self):
@@ -73,6 +76,29 @@ class SolMateAPIClient:
             raise RuntimeError("Unauthenticated :(")
         return response["signature"]
 
+    def check_uri(self, auth_token, device_id):
+        """Handles redirections using verification of uri and dummy request gaining redirection info"""
+        if not self.uri_verified:
+            print("Verifiying uri")
+            try:
+                data = self.request(
+                    "authenticate",
+                    {
+                        "serial_num": self.serialnum,
+                        "signature": auth_token,
+                        "device_id": device_id,
+                    },
+                )
+                if not data["redirect"] in (self.uri, None):
+                    print("Redirected - switching to new uri - uri of SolMate changed retry whatever you have done")
+                    self.uri = data["redirect"]
+                    print("New uri", self.uri)
+                    self.uri_verified = True
+                else:
+                    self.uri_verified = True
+            except BadRequest as err:
+                raise ValueError("Invalid Serial Number?") from err
+
     def authenticate(self, auth_token, device_id=DEFAULT_DEVICE_ID):
         """Given the authentication token, try to authenticate this websocket connection.
         Subsequent method calls to protected methods are unlocked this way.
@@ -98,7 +124,7 @@ class SolMateAPIClient:
                 authstore = json.load(file)
             if self.serialnum in authstore:
                 token = authstore[self.serialnum]
-        else: 
+        else:
             authstore = {}
         if token is None:
             print(f"Please enter the user password of your SolMate {self.serialnum}.")
@@ -111,6 +137,10 @@ class SolMateAPIClient:
                 json.dump(authstore, file)
             print(f"Stored credentials of {self.serialnum}.")
             print(f"Already stored credentials are: ", [sn for sn in authstore.keys()])
+        if not self.uri_verified:
+            print("uri nor verified yet - checking uri for redirection - SolMate might be on a different port")
+            self.check_uri(token, device_id)
+            self.connect()  # Connect to redirection address
         self.authenticate(token, device_id)
 
     def get_live_values(self):
