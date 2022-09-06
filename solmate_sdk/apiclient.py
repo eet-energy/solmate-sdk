@@ -11,7 +11,7 @@ from typing import Optional
 import websockets.client
 
 from .connection import SolConnection
-from .utils import BadRequest
+from .utils import BadRequest, retry, bad_request_handling
 
 CONFIG_DIRECTORY = pathlib.Path.home() / ".config" / "solmate-sdk"
 AUTHSTORE_FILE = CONFIG_DIRECTORY / "authstore.json"
@@ -143,13 +143,39 @@ class SolMateAPIClient:
             self.connect()  # Connect to redirection address
         self.authenticate(token, device_id)
 
+    @retry(2, BadRequest, 1)
     def get_live_values(self):
         """Return current live values of the respective SolMate as a dictionary (pv power, battery state, injection)."""
         return self.request("live_values", {})
 
+    def get_user_settings(self):
+        """Returns user settings which are valid at the moment"""
+        return self.request("get_user_settings", {})
+
+    def get_injection_settings(self):
+        """Shows your injection settings."""
+        return self.request("get_injection_settings", {})
+
+    def get_grid_mode(self):
+        """Returns grid mode i.e. Offgrid mode ('island mode') or Ongrid mode"""
+        return self.request("get_grid_mode", {})
+
     def check_online(self):
         """Check whether the respective SolMate is currently online."""
         return self.request("check_online", {"serial_num": self.serialnum})["online"]
+
+    def set_max_injection(self, maximum_power):
+        """Sets user defined maximum injection power which is applied if SolMates battery is ok with it"""
+        return self.request("set_user_maximum_injection", {"injection": maximum_power})
+
+    @bad_request_handling()
+    def set_min_injection(self, minimum_power):
+        """Sets user defined minimum injection power which is applied if SolMates battery is ok with it"""
+        return self.request("set_user_minimum_injection", {"injection": minimum_power})
+
+    def set_min_battery_percentage(self, minimum_percentage):
+        """Sets user defined minimum battery percentage"""
+        return self.request("set_user_minimum_battery_percentage", {"battery_percentage": minimum_percentage})
 
     def close(self):
         """Correctly close the underlying connection."""
