@@ -44,5 +44,7 @@ The SolMate SDK communicates via a Websocket API with your SolMate.
 
 ## Links
 
-- Our Homepage [www.eet.energy](https://www.eet.energy)
-- The project on PyPi [pypi.org/project/solmate-sdk](https://pypi.org/project/solmate-sdk/)
+- Our Homepage: [www.eet.energy](https://www.eet.energy)
+- The project on PyPi: [pypi.org/project/solmate-sdk](https://pypi.org/project/solmate-sdk/)
+- Read the docs page: https://solmate-sdk.readthedocs.io/en/latest/
+
