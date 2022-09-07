@@ -1,7 +1,9 @@
 from time import sleep
+
+from websockets.exceptions import ConnectionClosedError
+
 import solmate_sdk
 from solmate_sdk.utils import retry
-from websockets.exceptions import ConnectionClosedError
 
 client = solmate_sdk.SolMateAPIClient("test1")
 

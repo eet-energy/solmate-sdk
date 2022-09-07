@@ -3,18 +3,19 @@ Methods included here should only depend on built-in and third party modules.
 """
 
 import datetime
-import json
 import functools
+import json
 
 DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S"
 
 
 def bad_request_handling():
-    """A decorator that deals with BadRequest exceptions """
+    """A decorator that deals with BadRequest exceptions"""
+
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            delay=1
+            delay = 1
             r = 0
             while True:
                 try:
@@ -25,12 +26,15 @@ def bad_request_handling():
                         time.sleep(delay)
                     if r >= num_retries:
                         raise exc
+
         return wrapper
+
     return decorator
 
 
 def retry(num_retries, exception_type, delay=0.0):
     """A decorator that retries a function num_retries times"""
+
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -44,8 +48,11 @@ def retry(num_retries, exception_type, delay=0.0):
                         time.sleep(delay)
                     if r >= num_retries:
                         raise exc
+
         return wrapper
+
     return decorator
+
 
 class BadRequest(Exception):
     """Exception that the server may throw when receiving invalid requests.

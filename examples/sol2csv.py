@@ -1,7 +1,8 @@
 from time import sleep
+
 import solmate_sdk
 
-SEPERATOR=';'
+SEPERATOR = ";"
 
 client = solmate_sdk.SolMateAPIClient("test1")
 client.quickstart()

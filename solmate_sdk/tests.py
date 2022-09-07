@@ -1,10 +1,13 @@
 """Unit tests for the API Client."""
 
 import unittest
+
 from .apiclient import SolMateAPIClient
+
 
 class BasicUsageTest(unittest.TestCase):
     """Basic Test Case"""
+
     serial_num = "test1"
 
     def test_online(self):

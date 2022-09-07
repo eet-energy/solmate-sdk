@@ -11,7 +11,7 @@ from typing import Optional
 import websockets.client
 
 from .connection import SolConnection
-from .utils import BadRequest, retry, bad_request_handling
+from .utils import BadRequest, bad_request_handling, retry
 
 CONFIG_DIRECTORY = pathlib.Path.home() / ".config" / "solmate-sdk"
 AUTHSTORE_FILE = CONFIG_DIRECTORY / "authstore.json"

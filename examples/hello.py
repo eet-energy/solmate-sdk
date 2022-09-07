@@ -6,4 +6,4 @@ print(f"Your SolMate online status is: {client.check_online()}")
 
 # or for the protected API:
 client.quickstart()
-print(client.get_live_values()) 
+print(client.get_live_values())

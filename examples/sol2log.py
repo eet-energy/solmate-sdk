@@ -1,4 +1,5 @@
 from time import sleep
+
 import solmate_sdk
 
 client = solmate_sdk.SolMateAPIClient("test1")
