@@ -5,6 +5,7 @@ Methods included here should only depend on built-in and third party modules.
 import datetime
 import functools
 import json
+import time
 
 DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S"
 
@@ -17,6 +18,7 @@ def bad_request_handling():
         def wrapper(*args, **kwargs):
             delay = 1
             r = 0
+            num_retries = 2
             while True:
                 try:
                     return func(*args, **kwargs)
@@ -25,10 +27,9 @@ def bad_request_handling():
                     if delay:
                         time.sleep(delay)
                     if r >= num_retries:
-                        raise exc
-
+                        print("This route is not supported on this SolMate yet")
+                        break
         return wrapper
-
     return decorator
 
 

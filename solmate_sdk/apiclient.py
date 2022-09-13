@@ -143,10 +143,30 @@ class SolMateAPIClient:
             self.connect()  # Connect to redirection address
         self.authenticate(token, device_id)
 
+    @bad_request_handling()
+    def get_software_version(self):
+        """Returns the actually installed software version"""
+        return self.request("get_solmate_info", {})
+
     @retry(2, BadRequest, 1)
     def get_live_values(self):
         """Return current live values of the respective SolMate as a dictionary (pv power, battery state, injection)."""
         return self.request("live_values", {})
+
+    def get_recent_logs(self, days=None, start_time=None):
+        """Returns the latest logs on the sol server"""
+        import datetime
+        if not days:
+            days=1
+        if not start_time:
+            start_time = datetime.datetime.now()-datetime.timedelta(days)
+        end_time = start_time+datetime.timedelta(days)
+        return self.request("logs", {
+            "timeframes": [
+                {"start": start_time.isoformat()[:19],
+                 "end": end_time.isoformat()[:19],
+                 "resolution": 4}
+            ]})
 
     def get_user_settings(self):
         """Returns user settings which are valid at the moment"""
