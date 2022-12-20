@@ -6,6 +6,7 @@ import datetime
 import functools
 import json
 import time
+from websockets import ConnectionClosed
 
 DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S"
 
@@ -59,6 +60,10 @@ class BadRequest(Exception):
     """Exception that the server may throw when receiving invalid requests.
     The API Client will throw this exception when it receives such an error.
     """
+
+
+class ConnectionClosedOnPurpose(ConnectionClosed):
+    """Exception to be thrown on purpose i.e. during switching of wlan routers"""
 
 
 class MoreCapableEncoder(json.JSONEncoder):

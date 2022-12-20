@@ -1,2 +1,2 @@
 """Software Development Kit for the EET SolMate"""
-from .apiclient import SolMateAPIClient
+from .apiclient import SolMateAPIClient, LocalSolMateAPIClient

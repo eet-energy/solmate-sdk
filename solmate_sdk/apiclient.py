@@ -11,11 +11,12 @@ from typing import Optional
 import websockets.client
 
 from .connection import SolConnection
-from .utils import BadRequest, bad_request_handling, retry
+from .utils import BadRequest, ConnectionClosedOnPurpose, bad_request_handling, retry
 
 CONFIG_DIRECTORY = pathlib.Path.home() / ".config" / "solmate-sdk"
 AUTHSTORE_FILE = CONFIG_DIRECTORY / "authstore.json"
 DEFAULT_DEVICE_ID = "solmate-sdk"
+LOCAL_ACCESS_DEVICE_ID = "local_webinterface"
 SOL_URI = "wss://sol.eet.energy:9124"
 
 
@@ -41,6 +42,7 @@ class SolMateAPIClient:
         self.authenticated: bool = False
         self.uri_verified: bool = False
         self.uri = SOL_URI
+        self.device_id = DEFAULT_DEVICE_ID
 
     async def _connect(self):
         """Asynchronously attempts to connect to the server and initialize the client."""
@@ -89,6 +91,7 @@ class SolMateAPIClient:
                         "device_id": device_id,
                     },
                 )
+                print(data)
                 if not data["redirect"] in (self.uri, None):
                     print("Redirected - switching to new uri - uri of SolMate changed retry whatever you have done")
                     self.uri = data["redirect"]
@@ -157,10 +160,10 @@ class SolMateAPIClient:
         """Returns the latest logs on the sol server"""
         import datetime
         if not days:
-            days=1
+            days = 1
         if not start_time:
-            start_time = datetime.datetime.now()-datetime.timedelta(days)
-        end_time = start_time+datetime.timedelta(days)
+            start_time = datetime.datetime.now() - datetime.timedelta(days)
+        end_time = start_time + datetime.timedelta(days)
         return self.request("logs", {
             "timeframes": [
                 {"start": start_time.isoformat()[:19],
@@ -197,8 +200,39 @@ class SolMateAPIClient:
         """Sets user defined minimum battery percentage"""
         return self.request("set_user_minimum_battery_percentage", {"battery_percentage": minimum_percentage})
 
+    def set_AP_mode(self):
+        """This function opens the local Access Point (AP) of SolMate and leaves client (CLI) mode. This means you will
+        have to connect to your SolMates WIFI "SolMate <serialnumber>". However, if SolMate has a wired connection as
+        well online availability remains"""
+        return self.request("revert_to_ap", {})
+
+
     def close(self):
         """Correctly close the underlying connection."""
         if self.conn is None:
             raise RuntimeError("Connection has not yet been initialised.")
         asyncio.get_event_loop().run_until_complete(self.conn.close())
+
+
+class LocalSolMateAPIClient(SolMateAPIClient):
+    """Like SolMateAPIClient, however in local mode some extra routes are available
+
+    In the local mode there is no load_balancer between you and your SolMate - though self.uri_verified needs to be set
+
+    Furthermore, it is necessary to authenticate again using a special device_id. You may need to clear your authstore
+    file (if you tested the online API first)
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.device_id = LOCAL_ACCESS_DEVICE_ID
+        self.uri_verified = True  # on local access no redirection is possible and the test for it is misunderstood
+
+    def list_wifis(self):
+        """Lists actually available and non hidden SSIDs"""
+        return self.request("list_wifis", {})
+
+    def connect_to_wifi(self, ssid, password):
+        """Switches to other ssid or to the same - THE ACTUAL CONNECTION WILL BE BROKEN AFTER THAT
+         A TimeOutError will be raised rather than the ConnectionClosedOnPurpose error"""
+        self.request("connect_to_wifi", {"ssid": ssid, "password": password})
+        raise ConnectionClosedOnPurpose
