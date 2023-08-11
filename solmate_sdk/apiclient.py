@@ -16,6 +16,7 @@ from .utils import BadRequest, ConnectionClosedOnPurpose, bad_request_handling, 
 CONFIG_DIRECTORY = pathlib.Path.home() / ".config" / "solmate-sdk"
 AUTHSTORE_FILE = CONFIG_DIRECTORY / "authstore.json"
 DEFAULT_DEVICE_ID = "solmate-sdk"
+LOCAL_AUTHSTORE_FILE = CONFIG_DIRECTORY / "local_authstore.json"
 LOCAL_ACCESS_DEVICE_ID = "local_webinterface"
 SOL_URI = "wss://sol.eet.energy:9124"
 
@@ -43,6 +44,7 @@ class SolMateAPIClient:
         self.uri_verified: bool = False
         self.uri = SOL_URI
         self.device_id = DEFAULT_DEVICE_ID
+        self.authstore_file = AUTHSTORE_FILE
 
     async def _connect(self):
         """Asynchronously attempts to connect to the server and initialize the client."""
@@ -122,8 +124,8 @@ class SolMateAPIClient:
         """Connect, login, authenticate and store the token for future use!"""
         self.connect()
         token: Optional[str] = None
-        if AUTHSTORE_FILE.exists():
-            with open(AUTHSTORE_FILE, encoding="utf-8") as file:
+        if self.authstore_file.exists():
+            with open(self.authstore_file, encoding="utf-8") as file:
                 authstore = json.load(file)
             if self.serialnum in authstore:
                 token = authstore[self.serialnum]
@@ -131,11 +133,11 @@ class SolMateAPIClient:
             authstore = {}
         if token is None:
             print(f"Please enter the user password of your SolMate {self.serialnum}.")
-            print(f"The credentials will then be stored for future use in {AUTHSTORE_FILE}! :)")
+            print(f"The credentials will then be stored for future use in {self.authstore_file}! :)")
             password = getpass.getpass("Your SolMate's user password: ")
             token = self.login(password, device_id)
             CONFIG_DIRECTORY.mkdir(exist_ok=True)
-            with open(AUTHSTORE_FILE, "w", encoding="utf-8") as file:
+            with open(self.authstore_file, "w", encoding="utf-8") as file:
                 authstore[self.serialnum] = token
                 json.dump(authstore, file)
             print(f"Stored credentials of {self.serialnum}.")
@@ -226,6 +228,7 @@ class LocalSolMateAPIClient(SolMateAPIClient):
         super().__init__(*args, **kwargs)
         self.device_id = LOCAL_ACCESS_DEVICE_ID
         self.uri_verified = True  # on local access no redirection is possible and the test for it is misunderstood
+        self.authstore_file = LOCAL_AUTHSTORE_FILE
 
     def list_wifis(self):
         """Lists actually available and non hidden SSIDs"""
