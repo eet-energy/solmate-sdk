@@ -33,9 +33,10 @@ class SolMateAPIClient:
         print(f"Current live values of your SolMate: {client.get_live_values()}")
         ```
     Note when using LocalSolMateAPIClient instead of SolMateAPIClient, you need to add the local
-    address (IP or name) of the Solmate which you get from your local DHCP. For ease of handling,
-    use the hostname as this one does not change:
-        client = LocalSolMateAPIClient("S1K0506...00X", "ws://<your-local-solmate-address:9124")
+    hostname of the Solmate which you get from your local DHCP. Use the hostname and not the IP address,
+    else local and server access cant be distinguished. The hostname will most likely start with 'sun2plug'.
+    
+        client = LocalSolMateAPIClient("S1K0506...00X", "ws://<your-local-solmate-hostname:9124")
     """
 
     def __init__(self, serialnum: str, uri=SOL_URI):
