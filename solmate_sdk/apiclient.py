@@ -178,6 +178,11 @@ class SolMateAPIClient:
                  "resolution": 4}
             ]})
 
+    def get_milestones_savings(self, days=1):
+        """Returns the latest milestones saving"""
+        return self.request("milestones_savings", {"days":days})
+
+
     def get_user_settings(self):
         """Returns user settings which are valid at the moment"""
         return self.request("get_user_settings", {})
