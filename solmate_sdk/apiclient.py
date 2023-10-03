@@ -32,9 +32,14 @@ class SolMateAPIClient:
         client.quickstart()
         print(f"Current live values of your SolMate: {client.get_live_values()}")
         ```
+    Note when using LocalSolMateAPIClient instead of SolMateAPIClient, you need to add the local
+    hostname of the Solmate which you get from your local DHCP. Use the hostname and not the IP address,
+    else local and server access cant be distinguished. The hostname will most likely start with 'sun2plug'.
+    
+        client = LocalSolMateAPIClient("S1K0506...00X", "ws://<your-local-solmate-hostname:9124")
     """
 
-    def __init__(self, serialnum: str):
+    def __init__(self, serialnum: str, uri=SOL_URI):
         """Initializes the instance given a serial number and auth_token (signature).
         Leaves the underlying connection object uninitialised.
         """
@@ -42,7 +47,7 @@ class SolMateAPIClient:
         self.conn: Optional[SolConnection] = None
         self.authenticated: bool = False
         self.uri_verified: bool = False
-        self.uri = SOL_URI
+        self.uri = uri
         self.device_id = DEFAULT_DEVICE_ID
         self.authstore_file = AUTHSTORE_FILE
 
@@ -187,7 +192,12 @@ class SolMateAPIClient:
 
     def check_online(self):
         """Check whether the respective SolMate is currently online."""
-        return self.request("check_online", {"serial_num": self.serialnum})["online"]
+        if 'sol.eet.energy' in self.uri:
+            # for access via server
+            return self.request("check_online", {"serial_num": self.serialnum})["online"]
+        else:
+            # local uri has no "online" in the response, it is online if you can access it. 
+            return True
 
     def set_max_injection(self, maximum_power):
         """Sets user defined maximum injection power which is applied if SolMates battery is ok with it"""
