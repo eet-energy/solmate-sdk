@@ -6,11 +6,12 @@ from solmate_sdk.utils import retry
 from websockets.exceptions import ConnectionClosedError
 from asyncio.exceptions import TimeoutError
 
-client = solmate_sdk.LocalSolMateAPIClient("X2S1K0506A00000001")
+client = solmate_sdk.LocalSolMateAPIClient("X2S1K0506A00000001", uri = "ws://192.168.0.138:9124/")
 # Use your SolMates local IP Address here on port 9124 i.e. ws://<IP>:9124 if it is connected to your WLAN already
 # Use ws://192.168.4.1:9124/ if you are connected to your SolMate via its Access Point ("SolMate <serialnumber>")
-client.uri = "ws://192.168.0.138:9124/"
 
+client.connect()
+print(client.check_online())
 
 @retry(10, TimeoutError, 100)  # to handle WLAN switching
 @retry(10, ConnectionClosedError, 30)

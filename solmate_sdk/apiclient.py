@@ -192,12 +192,7 @@ class SolMateAPIClient:
 
     def check_online(self):
         """Check whether the respective SolMate is currently online."""
-        if 'sol.eet.energy' in self.uri:
-            # for access via server
-            return self.request("check_online", {"serial_num": self.serialnum})["online"]
-        else:
-            # local uri has no "online" in the response, it is online if you can access it. 
-            return True
+        return self.request("check_online", {"serial_num": self.serialnum})["online"]
 
     def set_max_injection(self, maximum_power):
         """Sets user defined maximum injection power which is applied if SolMates battery is ok with it"""
@@ -249,3 +244,9 @@ class LocalSolMateAPIClient(SolMateAPIClient):
          A TimeOutError will be raised rather than the ConnectionClosedOnPurpose error"""
         self.request("connect_to_wifi", {"ssid": ssid, "password": password})
         raise ConnectionClosedOnPurpose
+
+    def check_online(self):
+        """Check whether the respective SolMate is currently online.
+        The local api has no check_online route, it is online if you can connect to the local uri.
+        Please call connect() or quickstart(...) before."""
+        return self.conn != None
