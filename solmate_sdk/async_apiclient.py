@@ -236,8 +236,8 @@ class LocalSolMateAPIClient(SolMateAPIClient):
     Furthermore, it is necessary to authenticate again using a special device_id. You may need to clear your authstore
     file (if you tested the online API first)
     """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, serialnum: str, uri=SOL_URI):
+        super().__init__(serialnum, uri)
         self.device_id = LOCAL_ACCESS_DEVICE_ID
         self.uri_verified = True  # on local access no redirection is possible and the test for it is misunderstood
         self.authstore_file = LOCAL_AUTHSTORE_FILE
