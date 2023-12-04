@@ -5,7 +5,7 @@ Methods included here should only depend on built-in and third party modules.
 import datetime
 import functools
 import json
-import time
+import asyncio
 from websockets import ConnectionClosed
 
 DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S"
@@ -16,17 +16,17 @@ def bad_request_handling():
 
     def decorator(func):
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        async def wrapper(*args, **kwargs):
             delay = 1
             r = 0
             num_retries = 2
             while True:
                 try:
-                    return func(*args, **kwargs)
+                    return await func(*args, **kwargs)
                 except BadRequest as exc:
                     r += 1
                     if delay:
-                        time.sleep(delay)
+                        await asyncio.sleep(delay)
                     if r >= num_retries:
                         print("This route is not supported on this SolMate yet")
                         break
@@ -39,15 +39,15 @@ def retry(num_retries, exception_type, delay=0.0):
 
     def decorator(func):
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        async def wrapper(*args, **kwargs):
             r = 0
             while True:
                 try:
-                    return func(*args, **kwargs)
+                    return await func(*args, **kwargs)
                 except exception_type as exc:
                     r += 1
                     if delay:
-                        time.sleep(delay)
+                        await asyncio.sleep(delay)
                     if r >= num_retries:
                         raise exc
 
