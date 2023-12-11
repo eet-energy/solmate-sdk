@@ -1,4 +1,5 @@
 """Software Development Kit for the EET SolMate"""
-from .sync_apiclient import SolMateAPIClient, LocalSolMateAPIClient
-from .async_apiclient import SolMateAPIClient as AsyncSolMateAPIClient
-from .async_apiclient import LocalSolMateAPIClient as AsyncLocalSolMateAPIClient
+from .sync_apiclient import SyncSolMateAPIClient as SolMateAPIClient
+from .sync_apiclient import SyncLocalSolMateAPIClient as LocalSolMateAPIClient
+from .async_apiclient import AsyncSolMateAPIClient
+from .async_apiclient import AsyncLocalSolMateAPIClient
