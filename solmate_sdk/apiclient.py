@@ -141,7 +141,7 @@ class SolMateAPIClient:
             print(f"The credentials will then be stored for future use in {self.authstore_file}! :)")
             password = getpass.getpass("Your SolMate's user password: ")
             token = self.login(password, device_id)
-            CONFIG_DIRECTORY.mkdir(exist_ok=True)
+            CONFIG_DIRECTORY.mkdir(parents=True, exist_ok=True)
             with open(self.authstore_file, "w", encoding="utf-8") as file:
                 authstore[self.serialnum] = token
                 json.dump(authstore, file)
