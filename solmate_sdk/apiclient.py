@@ -53,6 +53,9 @@ class SolMateAPIClient:
 
     async def _connect(self):
         """Asynchronously attempts to connect to the server and initialize the client."""
+        if self.conn is not None:
+            await self.conn.close()
+
         sock = await websockets.client.connect(self.uri)
         self.conn = SolConnection(sock)
 
