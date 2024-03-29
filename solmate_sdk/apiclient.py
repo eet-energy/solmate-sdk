@@ -126,7 +126,7 @@ class SolMateAPIClient:
             if password == None:
                 password = getpass.getpass("Your SolMate's user password: ")
             token = await self._async_login(password, device_id)
-            CONFIG_DIRECTORY.mkdir(exist_ok=True)
+            CONFIG_DIRECTORY.mkdir(parents=True, exist_ok=True)
             with open(self.authstore_file, "w", encoding="utf-8") as file:
                 authstore[self.serialnum] = token
                 json.dump(authstore, file)
