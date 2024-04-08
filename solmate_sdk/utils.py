@@ -9,6 +9,7 @@ import time
 from websockets import ConnectionClosed
 
 DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S"
+DATETIME_FORMAT_INJECTION_PROFILES = "%Y-%m-%dT%H:%M:%S.%fZ"
 
 
 def bad_request_handling():

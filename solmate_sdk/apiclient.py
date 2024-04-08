@@ -35,7 +35,7 @@ class SolMateAPIClient:
     Note when using LocalSolMateAPIClient instead of SolMateAPIClient, you need to add the local
     hostname of the Solmate which you get from your local DHCP. Use the hostname and not the IP address,
     else local and server access cant be distinguished. The hostname will most likely start with 'sun2plug'.
-    
+
         client = LocalSolMateAPIClient("S1K0506...00X", "ws://<your-local-solmate-hostname:9124")
     """
 
@@ -169,22 +169,20 @@ class SolMateAPIClient:
     def get_recent_logs(self, days=None, start_time=None):
         """Returns the latest logs on the sol server"""
         import datetime
+
         if not days:
             days = 1
         if not start_time:
             start_time = datetime.datetime.now() - datetime.timedelta(days)
         end_time = start_time + datetime.timedelta(days)
-        return self.request("logs", {
-            "timeframes": [
-                {"start": start_time.isoformat()[:19],
-                 "end": end_time.isoformat()[:19],
-                 "resolution": 4}
-            ]})
+        return self.request(
+            "logs",
+            {"timeframes": [{"start": start_time.isoformat()[:19], "end": end_time.isoformat()[:19], "resolution": 4}]},
+        )
 
     def get_milestones_savings(self, days=1):
         """Returns the latest milestones saving"""
-        return self.request("milestones_savings", {"days":days})
-
+        return self.request("milestones_savings", {"days": days})
 
     def get_user_settings(self):
         """Returns user settings which are valid at the moment"""
@@ -221,6 +219,43 @@ class SolMateAPIClient:
         well online availability remains"""
         return self.request("revert_to_ap", {})
 
+    def get_api_info(self):
+        """Query all the available api calls."""
+        self.request("get_api_info", {})
+
+    def get_boost_injection(self):
+        """Get the boost injection settings from the solmate."""
+        return self.request("get_boost_injection", {})
+
+    def set_boost_injection(self, set_time_in_secs: int, set_wattage: int):
+        """
+        Set the boost injection. If "set_time" is greater than 0 the boost will be activate. The actual wattage of
+        the boost might differ due to inverter restrictions.
+        """
+        return self.request("set_boost_injection", {"time": set_time_in_secs, "wattage": set_wattage})
+
+    def get_injection_profiles(self):
+        """Get all the injection profiles from the solmate."""
+        return self.request("get_injection_profiles", {})
+
+    def set_injection_profiles(self, new_injection_profiles: dict, new_injection_profiles_timestamp: str):
+        """
+        Set the injection profiles on the solmate. This will overwrite all existing profiles. The new timestamp
+        needs to be newer than the local timestamp on the solmate in order to update them. Timestamp format needs to be
+        in "%Y-%m-%dT%H:%M:%S.%fZ" which is defined in solmate-sdk/utils.py as DATETIME_FORMAT_INJECTION_PROFILES for
+        convenience.
+        """
+        return self.request(
+            "set_injection_profiles",
+            {
+                "injection_profiles": new_injection_profiles,
+                "injection_profiles_timestamp": new_injection_profiles_timestamp,
+            },
+        )
+
+    def apply_injection_profile(self, injection_profile_id: str):
+        """Apply the injection profile with the id of 'injection_profile_id'."""
+        return self.request("apply_injection_profile", {"id": injection_profile_id})
 
     def close(self):
         """Correctly close the underlying connection."""
@@ -237,6 +272,7 @@ class LocalSolMateAPIClient(SolMateAPIClient):
     Furthermore, it is necessary to authenticate again using a special device_id. You may need to clear your authstore
     file (if you tested the online API first)
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.device_id = LOCAL_ACCESS_DEVICE_ID
@@ -249,7 +285,7 @@ class LocalSolMateAPIClient(SolMateAPIClient):
 
     def connect_to_wifi(self, ssid, password):
         """Switches to other ssid or to the same - THE ACTUAL CONNECTION WILL BE BROKEN AFTER THAT
-         A TimeOutError will be raised rather than the ConnectionClosedOnPurpose error"""
+        A TimeOutError will be raised rather than the ConnectionClosedOnPurpose error"""
         self.request("connect_to_wifi", {"ssid": ssid, "password": password})
         raise ConnectionClosedOnPurpose
 
