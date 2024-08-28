@@ -142,7 +142,8 @@ class SolMateAPIClient:
         if token is None:
             print(f"Please enter the user password of your SolMate {self.serialnum}.")
             print(f"The credentials will then be stored for future use in {self.authstore_file}! :)")
-            password = getpass.getpass("Your SolMate's user password: ")
+            if not password:
+                password = getpass.getpass("Your SolMate's user password: ")
             token = self.login(password, device_id)
             CONFIG_DIRECTORY.mkdir(parents=True, exist_ok=True)
             with open(self.authstore_file, "w", encoding="utf-8") as file:
