@@ -23,7 +23,6 @@ class SolConnection:
         reqid = self.reqid_counter()
         await self.sock.send(json.dumps({"route": route, "id": reqid, "data": data}, cls=MoreCapableEncoder))
         response = json.loads(await asyncio.wait_for(self.sock.recv(), timeout))
-        print(response)
         if "error" in response:
             raise BadRequest(response["error"])
         return response["data"]

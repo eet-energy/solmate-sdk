@@ -23,12 +23,12 @@ Import the `SolMateAPIClient` class and connect to your SolMate:
 ```python
 from solmate_sdk import SolMateAPIClient
 
-client = SolMateAPIClient("serial_num")
+client = SolMateAPIClient("<YOUR SOLMATE SERIAL NUMBER>")
 client.connect()
 print(f"Your SolMate online status is: {client.check_online()}")
 
 # or for the protected API:
-client.quickstart()
+client.quickstart() # or client.quickstart(password="<YOUR_SOLMATE_PASSWORD>")
 print(client.get_live_values())
 ```
 
@@ -37,7 +37,6 @@ The SolMate SDK communicates via a Websocket API with your SolMate.
 ## Roadmap
 
 - Quickstart supports multiple serial numbers (and multiple device ids?)
-- Publish docs on Read The Docs
 - More Examples
 - Full Unit Testing
 - Car Charger Example
@@ -47,3 +46,11 @@ The SolMate SDK communicates via a Websocket API with your SolMate.
 - Our Homepage: [www.eet.energy](https://www.eet.energy)
 - The project on PyPi: [pypi.org/project/solmate-sdk](https://pypi.org/project/solmate-sdk/)
 - Read the docs page: https://solmate-sdk.readthedocs.io/en/latest/
+
+## Changelog
+
+### Version 0.1.11
+
+- Added async methods and made them public
+- Added possibility to provide password to quickstart
+- Added possibility to initialize api client with async parameter

@@ -6,6 +6,7 @@ import getpass
 import hashlib
 import json
 import pathlib
+import logging
 from typing import Optional
 
 import websockets.client
@@ -22,24 +23,12 @@ SOL_URI = "wss://sol.eet.energy:9124"
 
 
 class SolMateAPIClient:
-    """Class-based API Client for the Sol and SolMate Websocket API.
-    This client provides synchronous endpoint methods on top of the asynchronous ones (actually used in the background).
-
-    Simple Usage:
-
-        ```python
-        client = SolMateAPIClient("S1K0506...00X")
-        client.quickstart()
-        print(f"Current live values of your SolMate: {client.get_live_values()}")
-        ```
-    Note when using LocalSolMateAPIClient instead of SolMateAPIClient, you need to add the local
-    hostname of the Solmate which you get from your local DHCP. Use the hostname and not the IP address,
-    else local and server access cant be distinguished. The hostname will most likely start with 'sun2plug'.
-
-        client = LocalSolMateAPIClient("S1K0506...00X", "ws://<your-local-solmate-hostname:9124")
+    """Class-based Websocket API Client for the Sol and SolMate.
+    This client provides synchronous and asynchronous endpoint methods.
+    Asynchronous methods start with async_.
     """
 
-    def __init__(self, serialnum: str, uri=SOL_URI):
+    def __init__(self, serialnum: str, uri=SOL_URI, asynchronous=False, logger=None):
         """Initializes the instance given a serial number and auth_token (signature).
         Leaves the underlying connection object uninitialised.
         """
@@ -50,29 +39,53 @@ class SolMateAPIClient:
         self.uri = uri
         self.device_id = DEFAULT_DEVICE_ID
         self.authstore_file = AUTHSTORE_FILE
+        self.eventloop = None
+        if logger is None:
+            logger = logging.getLogger("SolMate API client.")
+        self.logger = logger
+        if not asynchronous:
+            try:
+                self.eventloop = asyncio.get_event_loop()
+                if self.eventloop.is_closed():
+                    raise RuntimeError("The current event loop is closed.")
+            except RuntimeError:
+                # No event loop is currently running, so create a new one
+                self.eventloop = asyncio.new_event_loop()
+                asyncio.set_event_loop(self.eventloop)
 
-    async def _connect(self):
+    async def async_connect(self):
         """Asynchronously attempts to connect to the server and initialize the client."""
         if self.conn is not None:
-            await self.conn.close()
+            try:
+                await self.conn.close("Got redirected by SWAG balancer.")
+                self.logger.debug("Connection closed successfully.")
+            except Exception as e:
+                self.logger.error("Error while closing connection: %s", str(e))
 
+        self.logger.debug("Connecting to: %s", self.uri)
         sock = await websockets.client.connect(self.uri)
+        self.logger.debug("Socket connected.")
         self.conn = SolConnection(sock)
+        self.logger.info("Connected successfully.")
 
     def connect(self):
         """Synchronously attempts to connect to the server and initialize the client."""
-        asyncio.get_event_loop().run_until_complete(self._connect())
+        self.eventloop.run_until_complete(self.async_connect())
 
-    def request(self, route, data):
+    async def async_request(self, route, data):
         """Synchronous method to make requests to the API."""
         if self.conn is None:
             raise RuntimeError("Connection has not yet been initialised.")
-        return asyncio.get_event_loop().run_until_complete(self.conn.request(route, data))
+        return await self.conn.request(route, data)
 
-    def login(self, user_password, device_id=DEFAULT_DEVICE_ID) -> str:
+    def request(self, route, data):
+        """Synchronous method to make requests to the API."""
+        return self.eventloop.run_until_complete(self.async_request(route, data))
+
+    async def async_login(self, user_password, device_id=DEFAULT_DEVICE_ID) -> str:
         """Generates the authentication token from the serialnumber + password."""
         try:
-            response = self.request(
+            response = await self.async_request(
                 "login",
                 {
                     "serial_num": self.serialnum,
@@ -87,13 +100,17 @@ class SolMateAPIClient:
         if not response["success"]:
             raise RuntimeError("Unauthenticated :(")
         return response["signature"]
+    
+    def login(self, user_password, device_id=DEFAULT_DEVICE_ID) -> str:
+        """Generates the authentication token from the serialnumber + password."""
+        return self.eventloop.run_until_complete(self.async_login(user_password, device_id))
 
-    def check_uri(self, auth_token, device_id):
+    async def async_check_uri(self, auth_token, device_id): 
         """Handles redirections using verification of uri and dummy request gaining redirection info"""
         if not self.uri_verified:
-            print("Verifiying uri")
+            self.logger.debug("Verifiying uri")
             try:
-                data = self.request(
+                data = await self.async_request(
                     "authenticate",
                     {
                         "serial_num": self.serialnum,
@@ -101,23 +118,27 @@ class SolMateAPIClient:
                         "device_id": device_id,
                     },
                 )
-                print(data)
+                self.logger.debug(data)
                 if not data["redirect"] in (self.uri, None):
-                    print("Redirected - switching to new uri - uri of SolMate changed retry whatever you have done")
+                    self.logger.debug("Redirected - switching to new uri - uri of SolMate changed retry whatever you have done")
                     self.uri = data["redirect"]
-                    print("New uri", self.uri)
+                    self.logger.debug("New uri %s", self.uri)
                     self.uri_verified = True
                 else:
                     self.uri_verified = True
             except BadRequest as err:
                 raise ValueError("Invalid Serial Number?") from err
 
-    def authenticate(self, auth_token, device_id=DEFAULT_DEVICE_ID):
+    def check_uri(self, auth_token, device_id):
+        """Handles redirections using verification of uri and dummy request gaining redirection info"""
+        return self.eventloop.run_until_complete(self.async_check_uri(auth_token, device_id))
+
+    async def async_authenticate(self, auth_token, device_id=DEFAULT_DEVICE_ID):
         """Given the authentication token, try to authenticate this websocket connection.
         Subsequent method calls to protected methods are unlocked this way.
         """
         try:
-            self.request(
+            await self.async_request(
                 "authenticate",
                 {
                     "serial_num": self.serialnum,
@@ -128,9 +149,15 @@ class SolMateAPIClient:
         except BadRequest as err:
             raise ValueError("Invalid Serial Number?") from err
 
-    def quickstart(self, password=None, device_id=DEFAULT_DEVICE_ID):
-        """Connect, login, authenticate and store the token for future use!"""
-        self.connect()
+    def authenticate(self, auth_token, device_id=DEFAULT_DEVICE_ID):
+        """Given the authentication token, try to authenticate this websocket connection.
+        Subsequent method calls to protected methods are unlocked this way.
+        """
+        return self.eventloop.run_until_complete(self.async_authenticate(auth_token, device_id))
+
+    async def async_quickstart(self, password=None, device_id=DEFAULT_DEVICE_ID, store_auth_token_in_file=True):
+        """Connect, login, authenticate and store the token for future use async!"""
+        await self.async_connect()
         token: Optional[str] = None
         if self.authstore_file.exists():
             with open(self.authstore_file, encoding="utf-8") as file:
@@ -140,22 +167,28 @@ class SolMateAPIClient:
         else:
             authstore = {}
         if token is None:
-            print(f"Please enter the user password of your SolMate {self.serialnum}.")
-            print(f"The credentials will then be stored for future use in {self.authstore_file}! :)")
             if not password:
+                print(f"Please enter the user password of your SolMate {self.serialnum}.")
+                print(f"The credentials will be stored for future use in {self.authstore_file}.")
                 password = getpass.getpass("Your SolMate's user password: ")
-            token = self.login(password, device_id)
-            CONFIG_DIRECTORY.mkdir(parents=True, exist_ok=True)
-            with open(self.authstore_file, "w", encoding="utf-8") as file:
-                authstore[self.serialnum] = token
-                json.dump(authstore, file)
-            print(f"Stored credentials of {self.serialnum}.")
-            print(f"Already stored credentials are: ", [sn for sn in authstore.keys()])
+            token = await self.async_login(password, device_id)
+            if store_auth_token_in_file:
+                CONFIG_DIRECTORY.mkdir(parents=True, exist_ok=True)
+                with open(self.authstore_file, "w", encoding="utf-8") as file:
+                    authstore[self.serialnum] = token
+                    json.dump(authstore, file)
+                self.logger.debug("Stored credentials of %s.", self.serialnum)
+                self.logger.debug("Already stored credentials are: %s", [sn for sn in authstore.keys()])
         if not self.uri_verified:
-            print("uri nor verified yet - checking uri for redirection - SolMate might be on a different port")
-            self.check_uri(token, device_id)
-            self.connect()  # Connect to redirection address
-        self.authenticate(token, device_id)
+            self.logger.debug("Checking uri for redirection - SolMate might be on a different port")
+            await self.async_check_uri(token, device_id)
+            await self.async_connect()  # Connect to redirection address
+        await self.async_authenticate(token, device_id)
+
+    def quickstart(self, password=None, device_id=DEFAULT_DEVICE_ID, store_auth_token_in_file=True):
+        """Connect, login, authenticate and store the token for future use!"""
+        self.eventloop.run_until_complete(self.async_quickstart(password, device_id, store_auth_token_in_file))
+
 
     @bad_request_handling()
     def get_software_version(self):
